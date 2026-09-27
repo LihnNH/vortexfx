@@ -23,9 +23,9 @@ not relicensed by the project MIT license.
 ## Optional local assets
 
 Cambria and all other local font binaries are excluded from the repository.
-The generated Cambria preview contains rasterized artwork only. Inter is the
-only font distributed by default, through its licensed npm package. Optional
-fonts and imported images require permission for their intended use; they are
+The animated README previews contain rasterized artwork rendered with Inter.
+Inter is the only font distributed by default, through its licensed npm package.
+Optional fonts and imported images require permission for their intended use; they are
 not covered by the VortexFX MIT license.
 
 For Windows-supplied fonts, Microsoft's

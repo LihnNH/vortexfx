@@ -6,8 +6,6 @@ An interactive typography and logo experiment built with React, Vite and WebGL.
 Drag your artwork through a stationary circular field to create rippling edges,
 fine warm filaments, subtle violet bloom and a grainy paper texture.
 
-![VortexFX rendering with Cambria Bold Italic](docs/images/cambria-effect.png)
-
 Inspired by *[Using Blender Like A Graphic Designer!](https://www.youtube.com/watch?v=72xChVM08jI)*.
 This project recreates the visual technique in browser shaders. It is an
 independent implementation, not an official adaptation. No tutorial footage,
@@ -55,9 +53,9 @@ Default controls: **Force 81 · Distortion 67 · Waves 54 · Bloom 48 · Speed 1
 
 ## Fonts
 
-The original artwork and the preview above use **Cambria Bold Italic**. Cambria
-is not included in this repository; use your own appropriately licensed copy.
-The preview is a rendered image, not an embedded font file.
+The original artwork used **Cambria Bold Italic**. Cambria is not included in
+this repository; use your own appropriately licensed copy. The animated previews
+at the end of this README use the bundled **Inter** font.
 
 **Charter**, particularly **original Bitstream Charter Bold Italic**, is a
 recommended alternative for its expressive serif shapes. Check the license of
@@ -169,7 +167,7 @@ workflow's `PAGES_BASE_PATH` to `/` and configure the domain in Pages settings.
 
 ## License and attribution
 
-Original project code and the generated preview are licensed under the
+Original project code and the generated previews are licensed under the
 [MIT License](LICENSE), copyright 2026 LihnNH. Dependencies and fonts retain their
 own licenses; the project MIT license does not replace them. See
 [Third-party notices](THIRD_PARTY_NOTICES.md) for the bundled licenses.
@@ -177,3 +175,21 @@ own licenses; the project MIT license does not replace them. See
 The tutorial is credited above as visual inspiration. Proprietary font binaries
 and tutorial assets are not distributed with the repository. Font and image
 files you add yourself remain subject to their respective licenses.
+
+## Animated previews
+
+Both previews show **vortexfx** in **Inter**, with animation enabled and
+**Speed 93**. Each GIF loops a one-second animation at **50 fps**.
+
+### Default light preset
+
+The factory colors with **Force 81 · Distortion 67 · Waves 54 · Bloom 48**.
+
+![Animated VortexFX light preset with Inter and speed 93](docs/images/vortexfx-light.gif)
+
+### Dark preset
+
+The dark preset colors with **Force 81 · Distortion 67 · Waves 54 · Bloom 6**.
+Only the preset colors and bloom differ from the light preview.
+
+![Animated VortexFX dark preset with Inter and speed 93](docs/images/vortexfx-dark.gif)
