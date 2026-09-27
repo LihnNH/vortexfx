@@ -70,9 +70,10 @@ Place artwork fonts in `public/fonts/` and interface fonts in `public/fonts/ui/`
 TTF, OTF, WOFF and WOFF2 files are discovered recursively. The dropdown includes
 every discovered font, including those in `ui/`. For the interface, a filename
 containing `Regular` is preferred; otherwise the first UI font is used. With no
-UI fonts, the interface uses Inter. Cambria, when present with the original
-`cambria-bold-italic.ttf` filename, is selected first; otherwise Charter is
-preferred when available, with Inter as the fallback.
+UI fonts, the interface uses Inter. The first discovered artwork font is
+selected automatically, in sorted path order; if only UI fonts exist, the first
+of those is selected. No particular local font family or filename is required.
+If a selected local font cannot load, the artwork falls back to Inter.
 
 All local font files are excluded from Git, including files elsewhere in the
 project. Only add fonts whose licenses permit your intended web use. **Vite still
@@ -114,6 +115,23 @@ The build checks production compilation and writes bundled dependency license
 notices to `dist/licenses/dependencies.md`. Continue running the app with
 `npm run dev` for local development. Optional browser integration checks are
 available at [tests/browser.html](http://localhost:3000/tests/browser.html).
+
+To run the compiled site locally:
+
+```sh
+npm run build
+npm run preview
+```
+
+Open [localhost:4173](http://localhost:4173). The default build uses relative
+asset paths, so `dist/` can be served at the root or under a subdirectory.
+Serve it over HTTP; opening `dist/index.html` directly with `file://` is not
+supported by the browser's module loading rules. Font files are automatically
+discovered from `public/fonts/` during the build, including `ui/`, and copied
+into `dist/fonts/`. Rebuild after adding or removing a font; a static browser
+cannot list arbitrary files added to a server folder after compilation.
+With no local fonts, bundled Inter works for both the artwork and interface.
+Continue using `npm run dev` for everyday development.
 
 ## GitHub Pages deployment
 

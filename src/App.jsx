@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import localFonts from 'virtual:font-catalog';
-import { loadFont, loadInterfaceFont, fallbackFont } from './fonts.js';
+import { loadFontWithFallback, loadInterfaceFont, fallbackFont } from './fonts.js';
 import { createRenderer } from './renderer.js';
 import { importImage } from './import-image.js';
 
 const fonts = [fallbackFont, ...localFonts];
-const defaultFont = localFonts.find(font => font.id === 'cambria-bold-italic.ttf') ||
-  localFonts.find(font => !font.ui && /charter/i.test(font.id)) || fallbackFont;
+const defaultFont = localFonts.find(font => !font.ui) || localFonts[0] || fallbackFont;
 
 function Slider({ id, label, value, onChange }) {
   return <div className="slider-control">
@@ -33,11 +32,11 @@ export default function App() {
   useEffect(() => {
     let alive = true;
     loadInterfaceFont(localFonts).catch(() => {});
-    loadFont(defaultFont).catch(() => loadFont(fallbackFont)).then(family => {
+    loadFontWithFallback(defaultFont).then(({ font, family }) => {
       if (!alive) return;
       settingsRef.current = { ...settingsRef.current, fontFamily: family };
       setFontFamily(family);
-      if (family === fallbackFont.family) setSelectedFont(fallbackFont);
+      setSelectedFont(font);
       rendererRef.current = createRenderer(canvasRef.current, settingsRef.current, {
         onDrag: () => setDragged(true), onError: setFatalError,
       });
@@ -70,9 +69,10 @@ export default function App() {
     const font = fonts.find(font => font.id === id), request = ++fontRequest.current;
     setFontLoading(true); setError('');
     try {
-      const family = await loadFont(font);
+      const loaded = await loadFontWithFallback(font);
       if (request !== fontRequest.current) return;
-      setSelectedFont(font); setFontFamily(family);
+      setSelectedFont(loaded.font); setFontFamily(loaded.family);
+      if (loaded.font.id !== font.id) setError('Não foi possível carregar esta fonte. Usando Inter.');
     } catch { if (request === fontRequest.current) setError('Não foi possível carregar esta fonte.'); }
     finally { if (request === fontRequest.current) setFontLoading(false); }
   }

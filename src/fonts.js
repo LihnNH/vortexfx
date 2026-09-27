@@ -14,6 +14,14 @@ export function loadFont(font) {
   return loaded.get(font.id);
 }
 
+export async function loadFontWithFallback(font = fallbackFont) {
+  try { return { font, family: await loadFont(font) }; }
+  catch (error) {
+    if (font.builtin) throw error;
+    return { font: fallbackFont, family: await loadFont(fallbackFont) };
+  }
+}
+
 export async function loadInterfaceFont(fonts) {
   const candidates = fonts.filter(font => font.ui);
   const font = candidates.find(font => /regular/i.test(font.id)) || candidates[0] || fallbackFont;
