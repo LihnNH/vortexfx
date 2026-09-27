@@ -1,0 +1,57 @@
+# Dependencies, generated output and caches
+node_modules/
+dist/
+build/
+coverage/
+.vite/
+.cache/
+*.log
+*.tsbuildinfo
+tests/.fonts-*/
+
+# Local fonts: never redistribute personal font installations
+/public/fonts/**
+!/public/fonts/**/
+!/public/fonts/**/.gitkeep
+!/public/fonts/README.md
+*.[tT][tT][fF]
+*.[oO][tT][fF]
+*.[tT][tT][cC]
+*.[oO][tT][cC]
+*.[wW][oO][fF][fF]
+*.[wW][oO][fF][fF]2
+*.[eE][oO][tT]
+*.[pP][fF][aAbB]
+*.[aA][fF][mM]
+*.[dD][fF][oO][nN][tT]
+*.[fF][oO][nN]
+
+# Credentials and machine-specific configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+.npmrc
+.codex/
+.agents/
+.idea/
+.vscode/
+
+# Temporary files, OS metadata and reference material
+.DS_Store
+Thumbs.db
+desktop.ini
+*.tmp
+*.bak
+*.swp
+codex-clipboard-*
+transcricao*.txt
+transcript*.txt
+*.blend
+*.blend1
+*.mp4
+*.mov
+*.webm
