@@ -3,6 +3,7 @@ import localFonts from 'virtual:font-catalog';
 import { loadFontWithFallback, loadInterfaceFont, fallbackFont } from './fonts.js';
 import { createRenderer } from './renderer.js';
 import { importImage } from './import-image.js';
+import { DEFAULT_CONTROLS, DEFAULT_COLORS, colorToHex, hexToColor } from './settings.js';
 
 const fonts = [fallbackFont, ...localFonts];
 const defaultFont = localFonts.find(font => !font.ui) || localFonts[0] || fallbackFont;
@@ -21,12 +22,13 @@ export default function App() {
   const [selectedFont, setSelectedFont] = useState(defaultFont);
   const [fontFamily, setFontFamily] = useState(defaultFont?.family || 'serif');
   const [image, setImage] = useState(null), [mode, setMode] = useState('text');
-  const [strength, setStrength] = useState(65), [spacing, setSpacing] = useState(50), [bloom, setBloom] = useState(65);
-  const [effect, setEffect] = useState(70), [speed, setSpeed] = useState(50);
+  const [strength, setStrength] = useState(DEFAULT_CONTROLS.strength), [spacing, setSpacing] = useState(DEFAULT_CONTROLS.spacing), [bloom, setBloom] = useState(DEFAULT_CONTROLS.bloom);
+  const [effect, setEffect] = useState(DEFAULT_CONTROLS.effect), [speed, setSpeed] = useState(DEFAULT_CONTROLS.speed);
+  const [colors, setColors] = useState(DEFAULT_COLORS);
   const [animated, setAnimated] = useState(false), [dragged, setDragged] = useState(false);
   const [ready, setReady] = useState(false), [busy, setBusy] = useState(false), [fontLoading, setFontLoading] = useState(false);
   const [error, setError] = useState(''), [fatalError, setFatalError] = useState('');
-  const settings = { text, fontFamily, image, mode, strength, spacing, bloom, effect, speed, animated };
+  const settings = { text, fontFamily, image, mode, strength, spacing, bloom, effect, speed, animated, colors };
   const settingsRef = useRef(settings);
 
   useEffect(() => {
@@ -51,7 +53,7 @@ export default function App() {
   useEffect(() => {
     settingsRef.current = settings;
     rendererRef.current?.update(settings);
-  }, [text, fontFamily, image, mode, strength, spacing, bloom, effect, speed, animated]);
+  }, [text, fontFamily, image, mode, strength, spacing, bloom, effect, speed, animated, colors]);
 
   useEffect(() => {
     const syncFullscreen = () => document.body.classList.toggle('immersive', Boolean(document.fullscreenElement));
@@ -91,8 +93,9 @@ export default function App() {
   }
 
   function reset() {
-    setEffect(70); setSpeed(50);
-    setStrength(65); setSpacing(50); setBloom(65); setAnimated(false); setDragged(false); setError('');
+    setEffect(DEFAULT_CONTROLS.effect); setSpeed(DEFAULT_CONTROLS.speed);
+    setStrength(DEFAULT_CONTROLS.strength); setSpacing(DEFAULT_CONTROLS.spacing); setBloom(DEFAULT_CONTROLS.bloom);
+    setColors(DEFAULT_COLORS); setAnimated(false); setDragged(false); setError('');
     rendererRef.current?.reset();
   }
   async function exportPNG() {
@@ -146,10 +149,28 @@ export default function App() {
         <Slider id="speed" label="SPEED" value={speed} onChange={setSpeed} />
         <div className="actions">
           <button onClick={() => setAnimated(!animated)} aria-pressed={animated}><span className="play-symbol">{animated ? 'Ⅱ' : '▷'}</span>{animated ? 'Pause' : 'Animate'}</button>
-          <button onClick={reset} title="Reset position and effect">Reset<span>↺</span></button>
+          <button onClick={reset} title="Reset position, effect and colors">Reset<span>↺</span></button>
           <button onClick={exportPNG} className="export" disabled={!ready}>Save PNG<span>↓</span></button>
         </div>
       </div>
+      <details className="color-panel">
+        <summary>Colors</summary>
+        <div className="color-controls">
+          {[
+            ['background', 'Background'], ['text', 'Text / logo'], ['glowInner', 'Inner glow'],
+            ['glowOuter', 'Outer glow'], ['thin', 'Fine strokes'],
+          ].map(([key, label]) => <label className="color-control" htmlFor={`color-${key}`} key={key}>
+            <span>{label}</span>
+            <span className="color-value">
+              <input id={`color-${key}`} type="color" value={colorToHex(colors[key])} onChange={event => {
+                const color = hexToColor(event.target.value);
+                setColors(current => ({ ...current, [key]: color }));
+              }} />
+              <output htmlFor={`color-${key}`}>{colorToHex(colors[key]).toUpperCase()}</output>
+            </span>
+          </label>)}
+        </div>
+      </details>
       {error && <div className="import-error" role="alert">{error}</div>}
     </footer>
     <div className="colophon"><span>TYPOGRAPHY IN MOTION</span><span>{mode === 'image' ? 'IMPORTED SILHOUETTE' : selectedFont?.name.toUpperCase()} / WEBGL</span></div>

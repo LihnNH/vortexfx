@@ -34,15 +34,20 @@ WebGL must be enabled in your browser. No local fonts are required to start.
 - Drag the text or logo with your mouse or touch. Arrow keys also move it;
   hold Shift for larger steps. The circular field stays fixed.
 - Effect force ranges from 0 to 100. Values 0–4 show the sharp black silhouette;
-  blur and glow begin at 5. The default, 70, preserves the reference appearance.
+  blur and glow begin at 5. The default force is 81.
 - Adjust distortion, wave spacing and bloom independently. Thin filaments receive
   less bloom and a warmer dark tint; glow stays outside the black artwork.
-- Enable animation and adjust wave speed: 0 freezes the phase, 50 is the default
-  speed, and 100 speeds it up. Reset restores the default settings and position.
+- Enable animation and adjust wave speed: 0 freezes the phase, 50 is the original
+  speed, and 100 speeds it up. The default is 100. Reset restores the default
+  settings, colors and position.
+- Open **Colors** to change the background, text or logo, inner glow, outer glow
+  and fine strokes. The original palette is preserved as the default.
 - Export the artwork as a PNG or enter fullscreen for an uncluttered preview.
 
 Images are processed locally in the browser. Large imports are rasterized to a
 maximum of 4096 pixels on their longest side.
+
+Default controls: **Force 81 · Distortion 67 · Waves 54 · Bloom 48 · Speed 100**.
 
 ## Fonts
 

@@ -1,11 +1,13 @@
+import { DEFAULT_CONTROLS, DEFAULT_COLORS } from './settings.js';
+
 function postEffectScale(force) {
   return force < 5 ? 0 : (force - 4) / 66;
 }
 
-export function createRenderer(canvas, initialSettings, callbacks = {}) {
+export function createRenderer(canvas, initialSettings = {}, callbacks = {}) {
   const gl = canvas.getContext('webgl', { alpha: false, antialias: false, preserveDrawingBuffer: true });
   if (!gl) throw new Error('Could not initialize WebGL in this browser.');
-  let settings = { text: 'TEXT', fontFamily: 'serif', mode: 'text', image: null, strength: 65, spacing: 50, bloom: 65, effect: 70, speed: 50, animated: false, ...initialSettings };
+  let settings = { text: 'TEXT', fontFamily: 'serif', mode: 'text', image: null, ...DEFAULT_CONTROLS, animated: false, ...initialSettings, colors: { ...DEFAULT_COLORS, ...initialSettings.colors } };
   let disposed = false;
   const shaders = [], subscriptions = [];
   const listen = (target, event, handler) => {
@@ -27,6 +29,10 @@ export function createRenderer(canvas, initialSettings, callbacks = {}) {
     uniform float phase;
     uniform float glowPass;
     uniform float effectStrength;
+    uniform vec3 backgroundColor;
+    uniform vec3 textColor;
+    uniform vec3 flatInkColor;
+    uniform vec3 thinColor;
     float hash(vec2 p) { return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
     float noise(vec2 p){
       vec2 cell=floor(p), f=fract(p);
@@ -66,14 +72,14 @@ export function createRenderer(canvas, initialSettings, callbacks = {}) {
         gl_FragColor=vec4(vec3(body*mix(1.,.28,thinness)),1.);
         return;
       }
-      vec3 paper=vec3(.902,.867,.858);
+      vec3 paper=backgroundColor;
       float grain=hash(floor(p*pixelRatio))-.5;
       float mottling=(hash(floor(p/3.7))-.5)*.019+(hash(floor(p/18.))-.5)*.01;
       paper+=grain*.046+mottling;
       paper-=.025*pow(length(fromCenter/resolution),1.5);
-      vec3 inkColor=mix(vec3(.024,.015,.017),vec3(.20,.065,.028),thinness*.68);
+      vec3 inkColor=mix(textColor,thinColor,thinness*.68);
       float finish=smoothstep(.04,.7,effectStrength);
-      inkColor*=finish;
+      inkColor=mix(flatInkColor,inkColor,finish);
       vec3 color=mix(paper,inkColor,body);
       color+=grain*.028*body*finish;
       // Preserve the exact ink coverage for the post-process exclusion mask.
@@ -119,6 +125,8 @@ export function createRenderer(canvas, initialSettings, callbacks = {}) {
     uniform sampler2D aura;
     uniform vec2 size;
     uniform float intensity;
+    uniform vec3 innerGlowColor;
+    uniform vec3 outerGlowColor;
     float grain(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453)-.5;}
     void main(){
       vec2 uv=gl_FragCoord.xy/size;
@@ -131,20 +139,22 @@ export function createRenderer(canvas, initialSettings, callbacks = {}) {
       // The wider warm veil fades out beyond the closer violet fringe.
       // A smooth color ramp after bloom/inversion: warm tail, red fine
       // filaments, violet around the heavier silhouettes, then black ink.
-      vec3 color=mix(base,vec3(.94,.80,.61),smoothstep(.015,.12,wideGlow)*.32*outside);
-      color=mix(color,vec3(.66,.29,.34),smoothstep(.025,.15,nearGlow)*.48*outside);
-      color=mix(color,vec3(.66,.065,.78),smoothstep(.12,.44,nearGlow)*.94*outside);
+      // Shift the original red midpoint with both editable halo endpoints.
+      vec3 transitionColor=clamp(vec3(.66,.29,.34)+.5*(innerGlowColor-vec3(.66,.065,.78))+.5*(outerGlowColor-vec3(.94,.80,.61)),0.,1.);
+      vec3 color=mix(base,outerGlowColor,smoothstep(.015,.12,wideGlow)*.32*outside);
+      color=mix(color,transitionColor,smoothstep(.025,.15,nearGlow)*.48*outside);
+      color=mix(color,innerGlowColor,smoothstep(.12,.44,nearGlow)*.94*outside);
       color+=grain(gl_FragCoord.xy)*.04*min(nearGlow*3.,1.)*outside;
       gl_FragColor=vec4(color,1.);
     }`);
   const blurUniforms=Object.fromEntries(['image','size','direction'].map(key=>[key,gl.getUniformLocation(blurProgram,key)]));
-  const compositeUniforms=Object.fromEntries(['scene','glow','aura','size','intensity'].map(key=>[key,gl.getUniformLocation(compositeProgram,key)]));
+  const compositeUniforms=Object.fromEntries(['scene','glow','aura','size','intensity','innerGlowColor','outerGlowColor'].map(key=>[key,gl.getUniformLocation(compositeProgram,key)]));
   gl.useProgram(program);
   const buffer = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]), gl.STATIC_DRAW);
   const position = gl.getAttribLocation(program, 'position');
   gl.enableVertexAttribArray(position); gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
-  const uniforms = Object.fromEntries(['lettering','wideLettering','sharpLettering','resolution','offset','pixelRatio','amplitude','wavelength','phase','glowPass','effectStrength'].map(key => [key, gl.getUniformLocation(program,key)]));
+  const uniforms = Object.fromEntries(['lettering','wideLettering','sharpLettering','resolution','offset','pixelRatio','amplitude','wavelength','phase','glowPass','effectStrength','backgroundColor','textColor','flatInkColor','thinColor'].map(key => [key, gl.getUniformLocation(program,key)]));
   function textTexture(){
     const result=gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D,result);
     gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
@@ -258,6 +268,11 @@ export function createRenderer(canvas, initialSettings, callbacks = {}) {
     gl.uniform1f(uniforms.wavelength,33-settings.spacing*.28);
     gl.uniform1f(uniforms.phase,phase);
     gl.uniform1f(uniforms.effectStrength,settings.effect/100);
+    gl.uniform3fv(uniforms.backgroundColor,settings.colors.background);
+    gl.uniform3fv(uniforms.textColor,settings.colors.text);
+    gl.uniform3fv(uniforms.thinColor,settings.colors.thin);
+    const originalInk=settings.colors.text.every((channel,index)=>channel===DEFAULT_COLORS.text[index]);
+    gl.uniform3fv(uniforms.flatInkColor,originalInk?[0,0,0]:settings.colors.text);
     gl.drawArrays(gl.TRIANGLES,0,6);
     if(bloomIntensity>0){
       bindTarget(glowA);
@@ -288,6 +303,8 @@ export function createRenderer(canvas, initialSettings, callbacks = {}) {
       gl.uniform1i(compositeUniforms.scene,0); gl.uniform1i(compositeUniforms.glow,1); gl.uniform1i(compositeUniforms.aura,2);
       gl.uniform2f(compositeUniforms.size,canvas.width,canvas.height);
       gl.uniform1f(compositeUniforms.intensity,bloomIntensity*1.5);
+      gl.uniform3fv(compositeUniforms.innerGlowColor,settings.colors.glowInner);
+      gl.uniform3fv(compositeUniforms.outerGlowColor,settings.colors.glowOuter);
       gl.drawArrays(gl.TRIANGLES,0,6);
       gl.activeTexture(gl.TEXTURE0);
     }
@@ -320,7 +337,7 @@ export function createRenderer(canvas, initialSettings, callbacks = {}) {
     if (disposed) return;
     const redrawSource = ['text', 'fontFamily', 'mode', 'image', 'effect'].some(key => key in next && next[key] !== settings[key]);
     if ('animated' in next && next.animated !== animated) { animated = next.animated; lastTime = 0; }
-    settings = { ...settings, ...next };
+    settings = { ...settings, ...next, colors: { ...settings.colors, ...next.colors } };
     if (redrawSource) lettering(); else requestDraw();
   }
   function reset() { offset = { x: 0, y: 0 }; phase = 0; requestDraw(); }
