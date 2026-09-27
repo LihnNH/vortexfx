@@ -11,8 +11,8 @@ export function normalizePixels(data, width, height, requireTransparency) {
     }
     data[i] = data[i + 1] = data[i + 2] = 0;
   }
-  if (requireTransparency && !transparent) throw new Error('Este PNG tem fundo opaco. Importe um PNG com transparência.');
-  if (maxX < 0) throw new Error('A imagem está completamente transparente e não contém conteúdo visível.');
+  if (requireTransparency && !transparent) throw new Error('This PNG has an opaque background. Import a PNG with transparency.');
+  if (maxX < 0) throw new Error('The image is completely transparent and has no visible content.');
   return { x: minX, y: minY, width: maxX - minX + 1, height: maxY - minY + 1 };
 }
 
@@ -24,7 +24,7 @@ function sanitizeSVG(text) {
   const doc = new DOMParser().parseFromString(text, 'image/svg+xml');
   const root = doc.documentElement;
   if (doc.querySelector('parsererror') || root.localName !== 'svg' || root.namespaceURI !== 'http://www.w3.org/2000/svg') {
-    throw new Error('Este arquivo SVG não é válido.');
+    throw new Error('This SVG file is invalid.');
   }
   root.querySelectorAll('script, foreignObject, animate, animateTransform, animateMotion, set').forEach(node => node.remove());
   for (const element of [root, ...root.querySelectorAll('*')]) {
@@ -48,11 +48,11 @@ function sanitizeSVG(text) {
 
 export async function importImage(file) {
   const extension = file.name.split('.').pop().toLowerCase();
-  if (!['png', 'svg'].includes(extension)) throw new Error('Use apenas PNG com fundo transparente ou SVG.');
+  if (!['png', 'svg'].includes(extension)) throw new Error('Use only transparent PNG or SVG files.');
   let blob = file;
   if (extension === 'png') {
     const signature = new Uint8Array(await file.slice(0, 8).arrayBuffer());
-    if (!PNG_SIGNATURE.every((byte, index) => signature[index] === byte)) throw new Error('Este arquivo não é um PNG válido.');
+    if (!PNG_SIGNATURE.every((byte, index) => signature[index] === byte)) throw new Error('This file is not a valid PNG.');
   } else {
     blob = new Blob([sanitizeSVG(await file.text())], { type: 'image/svg+xml' });
   }
@@ -61,7 +61,7 @@ export async function importImage(file) {
   try {
     image.src = url;
     await image.decode();
-    if (!image.naturalWidth || !image.naturalHeight) throw new Error('A imagem não tem dimensões válidas.');
+    if (!image.naturalWidth || !image.naturalHeight) throw new Error('The image has invalid dimensions.');
     const scale = Math.min(1, 4096 / Math.max(image.naturalWidth, image.naturalHeight));
     const canvas = document.createElement('canvas');
     canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
@@ -77,7 +77,7 @@ export async function importImage(file) {
     mask.getContext('2d').drawImage(canvas, bounds.x, bounds.y, mask.width, mask.height, 0, 0, mask.width, mask.height);
     return { canvas: mask, name: file.name };
   } catch (error) {
-    if (error instanceof DOMException && error.name === 'EncodingError') throw new Error('Não foi possível ler a imagem. Confira se o arquivo está válido.');
+    if (error instanceof DOMException && error.name === 'EncodingError') throw new Error('Could not read the image. Check that the file is valid.');
     throw error;
   } finally { URL.revokeObjectURL(url); }
 }

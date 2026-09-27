@@ -72,8 +72,8 @@ export default function App() {
       const loaded = await loadFontWithFallback(font);
       if (request !== fontRequest.current) return;
       setSelectedFont(loaded.font); setFontFamily(loaded.family);
-      if (loaded.font.id !== font.id) setError('Não foi possível carregar esta fonte. Usando Inter.');
-    } catch { if (request === fontRequest.current) setError('Não foi possível carregar esta fonte.'); }
+      if (loaded.font.id !== font.id) setError('Could not load this font. Using Inter.');
+    } catch { if (request === fontRequest.current) setError('Could not load this font.'); }
     finally { if (request === fontRequest.current) setFontLoading(false); }
   }
 
@@ -108,50 +108,50 @@ export default function App() {
 
   return <main>
     <header className="masthead">
-      <a className="wordmark" href={import.meta.env.BASE_URL} aria-label="VortexFX início">vortex<span>fx</span></a>
-      <span className="edition">ESTUDO DE DISTORÇÃO / 001</span>
-      <button onClick={fullscreen} className="icon-button" aria-label="Tela cheia" title="Tela cheia">↗</button>
+      <a className="wordmark" href={import.meta.env.BASE_URL} aria-label="VortexFX home">vortex<span>fx</span></a>
+      <span className="edition">DISTORTION STUDY / 001</span>
+      <button onClick={fullscreen} className="icon-button" aria-label="Fullscreen" title="Fullscreen">↗</button>
     </header>
-    <section className="stage" aria-label="Distorção circular interativa">
-      <canvas ref={canvasRef} id="art" tabIndex="0" aria-label="Arraste a arte com o mouse ou use as setas do teclado. As ondas ficam fixas." />
-      <div className="stage-label"><span className="dot" />CAMPO CIRCULAR · {mode === 'image' ? 'IMAGEM LIVRE' : 'TEXTO LIVRE'}</div>
-      <div className={`drag-hint${dragged ? ' used' : ''}`}><span>↔</span>arraste {mode === 'image' ? 'a imagem' : 'o texto'} para sentir as ondas</div>
+    <section className="stage" aria-label="Interactive circular distortion">
+      <canvas ref={canvasRef} id="art" tabIndex="0" aria-label="Drag the artwork with your mouse or use the arrow keys. The waves stay fixed." />
+      <div className="stage-label"><span className="dot" />CIRCULAR FIELD · {mode === 'image' ? 'FREEFORM IMAGE' : 'FREEFORM TEXT'}</div>
+      <div className={`drag-hint${dragged ? ' used' : ''}`}><span>↔</span>drag the {mode === 'image' ? 'image' : 'text'} to feel the waves</div>
       {fatalError && <div id="error" role="alert">{fatalError}</div>}
     </section>
     <footer className="toolbar">
       <div className="source-row">
-        <div className="source-switch" role="group" aria-label="Conteúdo da arte">
-          <button aria-pressed={mode === 'text'} onClick={() => { setMode('text'); setError(''); }}>Texto</button>
-          <button aria-pressed={mode === 'image'} disabled={!image} onClick={() => { setMode('image'); setError(''); }}>Imagem</button>
+        <div className="source-switch" role="group" aria-label="Artwork source">
+          <button aria-pressed={mode === 'text'} onClick={() => { setMode('text'); setError(''); }}>Text</button>
+          <button aria-pressed={mode === 'image'} disabled={!image} onClick={() => { setMode('image'); setError(''); }}>Image</button>
         </div>
-        <div className="text-control"><label htmlFor="text">SEU TEXTO</label><input id="text" value={text} onChange={event => { setText(event.target.value); setMode('text'); }} maxLength="24" spellCheck="false" autoComplete="off" aria-label="Texto do efeito" disabled={!ready} /></div>
-        <div className="font-control"><label htmlFor="font">FONTE{fontLoading && <span>CARREGANDO</span>}</label>
-          <select id="font" aria-label="Fonte do texto" value={selectedFont?.id || ''} disabled={!ready} aria-busy={fontLoading} onChange={event => changeFont(event.target.value)}>
-            <optgroup label="Fontes da arte">{fonts.filter(font => !font.ui).map(font => <option key={font.id} value={font.id}>{font.name}</option>)}</optgroup>
-            <optgroup label="Fontes da interface">{fonts.filter(font => font.ui).map(font => <option key={font.id} value={font.id}>{font.name}</option>)}</optgroup>
+        <div className="text-control"><label htmlFor="text">YOUR TEXT</label><input id="text" value={text} onChange={event => { setText(event.target.value); setMode('text'); }} maxLength="24" spellCheck="false" autoComplete="off" aria-label="Effect text" disabled={!ready} /></div>
+        <div className="font-control"><label htmlFor="font">FONT{fontLoading && <span>LOADING</span>}</label>
+          <select id="font" aria-label="Text font" value={selectedFont?.id || ''} disabled={!ready} aria-busy={fontLoading} onChange={event => changeFont(event.target.value)}>
+            <optgroup label="Artwork fonts">{fonts.filter(font => !font.ui).map(font => <option key={font.id} value={font.id}>{font.name}</option>)}</optgroup>
+            <optgroup label="Interface fonts">{fonts.filter(font => font.ui).map(font => <option key={font.id} value={font.id}>{font.name}</option>)}</optgroup>
           </select>
         </div>
         <div className="import-control">
-          <button className="import-button" onClick={() => fileRef.current?.click()} disabled={!ready || busy}>{busy ? 'Importando…' : 'Importar foto/logo'}<span>↥</span></button>
-          <span className="import-caption">PNG transparente ou SVG · silhueta preta</span>
-          <input ref={fileRef} type="file" accept=".png,.svg,image/png,image/svg+xml" onChange={chooseImage} hidden aria-label="Arquivo PNG transparente ou SVG" />
+          <button className="import-button" onClick={() => fileRef.current?.click()} disabled={!ready || busy}>{busy ? 'Importing…' : 'Import image/logo'}<span>↥</span></button>
+          <span className="import-caption">Transparent PNG or SVG · black silhouette</span>
+          <input ref={fileRef} type="file" accept=".png,.svg,image/png,image/svg+xml" onChange={chooseImage} hidden aria-label="Transparent PNG or SVG file" />
         </div>
-        {image && <div className="image-name" title={image.name}>{image.name}<button aria-label="Remover imagem" onClick={() => { setImage(null); setMode('text'); }}>×</button></div>}
+        {image && <div className="image-name" title={image.name}>{image.name}<button aria-label="Remove image" onClick={() => { setImage(null); setMode('text'); }}>×</button></div>}
       </div>
       <div className="adjustment-row">
-        <Slider id="effect" label="FORÇA DO EFEITO" value={effect} onChange={setEffect} />
-        <Slider id="strength" label="DISTORÇÃO" value={strength} onChange={setStrength} />
-        <Slider id="spacing" label="ONDAS" value={spacing} onChange={setSpacing} />
+        <Slider id="effect" label="EFFECT FORCE" value={effect} onChange={setEffect} />
+        <Slider id="strength" label="DISTORTION" value={strength} onChange={setStrength} />
+        <Slider id="spacing" label="WAVES" value={spacing} onChange={setSpacing} />
         <Slider id="bloom" label="BLOOM" value={bloom} onChange={setBloom} />
-        <Slider id="speed" label="VELOCIDADE" value={speed} onChange={setSpeed} />
+        <Slider id="speed" label="SPEED" value={speed} onChange={setSpeed} />
         <div className="actions">
-          <button onClick={() => setAnimated(!animated)} aria-pressed={animated}><span className="play-symbol">{animated ? 'Ⅱ' : '▷'}</span>{animated ? 'Pausar' : 'Animar'}</button>
-          <button onClick={reset} title="Restaurar posição e efeito">Reiniciar<span>↺</span></button>
-          <button onClick={exportPNG} className="export" disabled={!ready}>Salvar PNG<span>↓</span></button>
+          <button onClick={() => setAnimated(!animated)} aria-pressed={animated}><span className="play-symbol">{animated ? 'Ⅱ' : '▷'}</span>{animated ? 'Pause' : 'Animate'}</button>
+          <button onClick={reset} title="Reset position and effect">Reset<span>↺</span></button>
+          <button onClick={exportPNG} className="export" disabled={!ready}>Save PNG<span>↓</span></button>
         </div>
       </div>
       {error && <div className="import-error" role="alert">{error}</div>}
     </footer>
-    <div className="colophon"><span>TIPOGRAFIA EM MOVIMENTO</span><span>{mode === 'image' ? 'SILHUETA IMPORTADA' : selectedFont?.name.toUpperCase()} / WEBGL</span></div>
+    <div className="colophon"><span>TYPOGRAPHY IN MOTION</span><span>{mode === 'image' ? 'IMPORTED SILHOUETTE' : selectedFont?.name.toUpperCase()} / WEBGL</span></div>
   </main>;
 }

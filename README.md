@@ -1,5 +1,7 @@
 # VortexFX
 
+[Try the live demo on GitHub Pages](https://lihnnh.github.io/vortexfx/)
+
 An interactive typography and logo experiment built with React, Vite and WebGL.
 Drag your artwork through a stationary circular field to create rippling edges,
 fine warm filaments, subtle violet bloom and a grainy paper texture.

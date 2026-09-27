@@ -11,8 +11,8 @@ test('converts colored and white content to black, retaining partial transparenc
   assert.deepEqual([...pixels.slice(16)], [0, 0, 0, 255, 0, 0, 0, 128]);
 });
 test('rejects opaque PNGs and invisible content', () => {
-  assert.throws(() => normalizePixels(new Uint8ClampedArray([255, 255, 255, 255]), 1, 1, true), /fundo opaco/);
-  assert.throws(() => normalizePixels(new Uint8ClampedArray([0, 0, 0, 0]), 1, 1, true), /conteúdo visível/);
+  assert.throws(() => normalizePixels(new Uint8ClampedArray([255, 255, 255, 255]), 1, 1, true), /opaque background/);
+  assert.throws(() => normalizePixels(new Uint8ClampedArray([0, 0, 0, 0]), 1, 1, true), /visible content/);
 });
 test('accepts opaque SVG geometry as content and makes it black', () => {
   const pixels = new Uint8ClampedArray([255, 255, 255, 255]);
@@ -20,6 +20,6 @@ test('accepts opaque SVG geometry as content and makes it black', () => {
   assert.deepEqual([...pixels], [0, 0, 0, 255]);
 });
 test('rejects unsupported extensions and files disguised as PNG', async () => {
-  await assert.rejects(importImage({ name: 'photo.jpg' }), /apenas PNG/);
-  await assert.rejects(importImage({ name: 'fake.png', slice: () => new Blob(['not png']) }), /PNG válido/);
+  await assert.rejects(importImage({ name: 'photo.jpg' }), /only transparent PNG/);
+  await assert.rejects(importImage({ name: 'fake.png', slice: () => new Blob(['not png']) }), /valid PNG/);
 });

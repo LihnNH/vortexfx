@@ -4,7 +4,7 @@ function postEffectScale(force) {
 
 export function createRenderer(canvas, initialSettings, callbacks = {}) {
   const gl = canvas.getContext('webgl', { alpha: false, antialias: false, preserveDrawingBuffer: true });
-  if (!gl) throw new Error('Não foi possível iniciar o WebGL neste navegador.');
+  if (!gl) throw new Error('Could not initialize WebGL in this browser.');
   let settings = { text: 'TEXT', fontFamily: 'serif', mode: 'text', image: null, strength: 65, spacing: 50, bloom: 65, effect: 70, speed: 50, animated: false, ...initialSettings };
   let disposed = false;
   const shaders = [], subscriptions = [];
@@ -176,7 +176,7 @@ export function createRenderer(canvas, initialSettings, callbacks = {}) {
     gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D,result.texture);
     gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,w,h,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
     gl.bindFramebuffer(gl.FRAMEBUFFER,result.framebuffer);
-    if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE) throw new Error('Buffer de bloom indisponível.');
+    if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE) throw new Error('Bloom framebuffer unavailable.');
   }
   function bindTarget(result) {
     gl.bindFramebuffer(gl.FRAMEBUFFER,result?.framebuffer || null);
@@ -328,7 +328,7 @@ export function createRenderer(canvas, initialSettings, callbacks = {}) {
     if (frame) cancelAnimationFrame(frame);
     frame = 0; draw(performance.now());
     return new Promise((resolve, reject) => canvas.toBlob(blob => {
-      if (!blob) { reject(new Error('Não foi possível salvar a imagem.')); return; }
+      if (!blob) { reject(new Error('Could not save the image.')); return; }
       const url = URL.createObjectURL(blob), link = document.createElement('a');
       link.href = url; link.download = 'vortexfx.png'; link.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000); resolve();
@@ -344,7 +344,7 @@ export function createRenderer(canvas, initialSettings, callbacks = {}) {
   }
   listen(canvas, 'webglcontextlost', event => {
     event.preventDefault(); if (frame) cancelAnimationFrame(frame); frame = 0;
-    callbacks.onError?.('O contexto gráfico foi interrompido. Recarregue a página.');
+    callbacks.onError?.('The graphics context was lost. Reload the page.');
   });
   resize();
   return { update, reset, exportPNG, dispose };
