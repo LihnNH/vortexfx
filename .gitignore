@@ -53,5 +53,7 @@ transcript*.txt
 *.blend
 *.blend1
 *.mp4
+# Deliberately published README previews
+!/docs/videos/*.mp4
 *.mov
 *.webm

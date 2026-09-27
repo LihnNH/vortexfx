@@ -179,17 +179,21 @@ files you add yourself remain subject to their respective licenses.
 ## Animated previews
 
 Both previews show **vortexfx** in **Inter**, with animation enabled and
-**Speed 93**. Each GIF loops a one-second animation at **50 fps**.
+**Speed 93**. Each MP4 contains a one-second animation at **60 fps**.
 
 ### Default light preset
 
 The factory colors with **Force 81 · Distortion 67 · Waves 54 · Bloom 48**.
 
-![Animated VortexFX light preset with Inter and speed 93](docs/images/vortexfx-light.gif)
+<video src="https://github.com/LihnNH/vortexfx/raw/refs/heads/main/docs/videos/vortexfx-light.mp4" width="990" controls autoplay loop muted playsinline aria-label="VortexFX light preset with Inter and speed 93"></video>
+
+[Watch the light preview](docs/videos/vortexfx-light.mp4)
 
 ### Dark preset
 
 The dark preset colors with **Force 81 · Distortion 67 · Waves 54 · Bloom 6**.
 Only the preset colors and bloom differ from the light preview.
 
-![Animated VortexFX dark preset with Inter and speed 93](docs/images/vortexfx-dark.gif)
+<video src="https://github.com/LihnNH/vortexfx/raw/refs/heads/main/docs/videos/vortexfx-dark.mp4" width="990" controls autoplay loop muted playsinline aria-label="VortexFX dark preset with Inter and speed 93"></video>
+
+[Watch the dark preview](docs/videos/vortexfx-dark.mp4)
