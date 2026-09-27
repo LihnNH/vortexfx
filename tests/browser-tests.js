@@ -1,5 +1,7 @@
 import { importImage } from '../src/import-image.js';
 import { createRenderer } from '../src/renderer.js';
+import { loadFont, fallbackFont } from '../src/fonts.js';
+import { getTextLayout, getImageLayout, REFERENCE_FONT_SIZE } from '../src/render-layout.js';
 
 const results = document.querySelector('#results');
 let passed = 0, failed = 0;
@@ -81,4 +83,67 @@ await check('SVG silhouette renders in WebGL and can be replaced with PNG', asyn
     assert(canvas.width > 0 && !canvas.getContext('webgl').getError(), 'WebGL error when switching content.');
   } finally { renderer.dispose(); }
 });
+for (const mode of ['text', 'image']) {
+  await check(`${mode} keeps its wave geometry after fullscreen, square and portrait resizes`, async () => {
+    const fontFamily = await loadFont(fallbackFont);
+    const canvas = document.createElement('canvas');
+    canvas.style.cssText = 'position:fixed;left:0;top:0;width:990px;height:250px;pointer-events:none';
+    document.body.append(canvas);
+    const measure = document.createElement('canvas').getContext('2d');
+    measure.font = `${REFERENCE_FONT_SIZE}px "${fontFamily}"`;
+    const bounds = measure.measureText('vortexfx');
+    const inkWidth = bounds.actualBoundingBoxLeft + bounds.actualBoundingBoxRight;
+    const colors = { background: [0,0,0], text: [1,1,1], thin: [1,1,1], glowInner: [1,1,1], glowOuter: [1,1,1] };
+    const renderer = createRenderer(canvas, { text: 'vortexfx', fontFamily, mode, image: svg, effect: 81, colors, bloom: 0 });
+    const settle = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    function sample(width, height) {
+      const { effectScale } = mode === 'text' ? getTextLayout(width,height,inkWidth) : getImageLayout(width,height,svg.canvas.width,svg.canvas.height);
+      const normalized = document.createElement('canvas'); normalized.width = 900; normalized.height = 200;
+      const ctx = normalized.getContext('2d');
+      ctx.setTransform(.5,0,0,.5,450,100);
+      ctx.drawImage(canvas,-width/effectScale/2,-height/effectScale/2,width/effectScale,height/effectScale);
+      const pixels = ctx.getImageData(0,0,900,200).data;
+      return { effectScale, mask: Uint8Array.from({ length: pixels.length/4 }, (_,index) => pixels[index*4] > 127 ? 1 : 0) };
+    }
+    function expandMask(mask,radius) {
+      const expanded = new Uint8Array(mask.length);
+      for (let y=0;y<200;y++) for (let x=0;x<900;x++) {
+        if (!mask[y*900+x]) continue;
+        for (let dy=Math.max(0,y-radius);dy<=Math.min(199,y+radius);dy++) {
+          expanded.fill(1,dy*900+Math.max(0,x-radius),dy*900+Math.min(899,x+radius)+1);
+        }
+      }
+      return expanded;
+    }
+    try {
+      for (const bloom of [0,48]) {
+        canvas.style.width = '990px'; canvas.style.height = '250px';
+        renderer.update({ bloom }); await settle();
+        // Moving the art must remain a uniform translation through the fixed field.
+        renderer.reset();
+        canvas.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight'})); await settle();
+        const baseline = sample(990,250);
+        for (const [width,height] of [[1280,720],[640,640],[360,780],[1920,300],[990,250]]) {
+          canvas.style.width = `${width}px`; canvas.style.height = `${height}px`; await settle();
+          const resized = sample(width,height);
+          // Hairlines cross pixel boundaries at small sizes. Permit one CSS
+          // pixel of rasterization error, while checking both directions so
+          // filled-in letters or missing strokes cannot pass by containment.
+          const radius=Math.ceil(.5/Math.min(baseline.effectScale,resized.effectScale));
+          const expandedBaseline=expandMask(baseline.mask,radius), expandedResized=expandMask(resized.mask,radius);
+          let baselineInk=0, resizedInk=0, matched=0;
+          for (let i=0;i<baseline.mask.length;i++) {
+            baselineInk+=baseline.mask[i]; resizedInk+=resized.mask[i];
+            matched+=baseline.mask[i] && expandedResized[i] ? 1 : 0;
+            matched+=resized.mask[i] && expandedBaseline[i] ? 1 : 0;
+          }
+          assert(baselineInk > 1000 && resizedInk > 1000, 'The artwork disappeared.');
+          assert(Math.min(baselineInk,resizedInk)/Math.max(baselineInk,resizedInk) > .9, 'Ink coverage changed by more than 10%.');
+          assert(matched/(baselineInk+resizedInk) > .98, `${width}×${height}, bloom ${bloom}: geometry agreement ${(matched/(baselineInk+resizedInk)*100).toFixed(2)}%`);
+          assert(!canvas.getContext('webgl').getError(), 'WebGL failed after resizing.');
+        }
+      }
+    } finally { renderer.dispose(); canvas.remove(); }
+  });
+}
 document.querySelector('#summary').textContent = `${passed} passed; ${failed} failed.`;

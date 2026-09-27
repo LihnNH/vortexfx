@@ -94,8 +94,12 @@ sharing a server or deploying. The build captures the font catalog at build time
 Canvas 2D creates the source silhouette and two blurred masks. A WebGL shader
 compares those masks against concentric waves with soft noise, then adds an
 exterior glow, warm fine lines and film grain. Moving the artwork changes its
-sampling coordinates while the field remains stationary. The mask blur sizes
-are calibrated approximations of the Blender setup, rather than pixel-identical
+sampling coordinates while the field remains stationary. Mask blur sizes
+and wave spacing share the artwork's fitted scale, so fullscreen and changes in
+aspect ratio preserve the effect relative to the text or logo. Noise uses the
+same logical coordinates, and dragging stays proportional when resizing.
+Masks are cached independently of the viewport. Their blur sizes are calibrated
+approximations of the Blender setup, rather than pixel-identical
 Blender node outputs.
 
 ## Project layout
@@ -104,6 +108,7 @@ Blender node outputs.
 | --- | --- |
 | `src/App.jsx` | React controls, source selection and interaction state |
 | `src/renderer.js` | Canvas masks, WebGL shaders, dragging and PNG export |
+| `src/render-layout.js` | Shared artwork fitting and effect scale across viewport sizes |
 | `src/import-image.js` | Image validation and black silhouette conversion |
 | `src/fonts.js` | Local font loading and bundled Inter fallback |
 | `src/styles.css` | Responsive interface styles |

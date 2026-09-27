@@ -1,4 +1,5 @@
 import { DEFAULT_CONTROLS, DEFAULT_COLORS } from './settings.js';
+import { getTextLayout, getImageLayout, REFERENCE_FONT_SIZE, REFERENCE_SIZE } from './render-layout.js';
 
 function postEffectScale(force) {
   return force < 5 ? 0 : (force - 4) / 66;
@@ -24,6 +25,10 @@ export function createRenderer(canvas, initialSettings = {}, callbacks = {}) {
     uniform vec2 resolution;
     uniform vec2 offset;
     uniform float pixelRatio;
+    uniform vec2 targetSize;
+    uniform vec2 fieldSize;
+    uniform vec2 maskSize;
+    uniform float artworkScale;
     uniform float amplitude;
     uniform float wavelength;
     uniform float phase;
@@ -40,19 +45,19 @@ export function createRenderer(canvas, initialSettings = {}, callbacks = {}) {
       return mix(mix(hash(cell),hash(cell+vec2(1.,0.)),f.x),mix(hash(cell+vec2(0.,1.)),hash(cell+vec2(1.,1.)),f.x),f.y);
     }
     void main(){
-      vec2 p=gl_FragCoord.xy/pixelRatio;
-      float scale=min(resolution.x/990.,resolution.y/550.);
+      vec2 p=gl_FragCoord.xy*resolution/targetSize;
       vec2 fromCenter=p-resolution*.5;
       float radius=length(fromCenter);
-      float wave=radius/(wavelength*scale)*6.2831853-phase;
+      float wave=radius/(wavelength*artworkScale)*6.2831853-phase;
       // Blender: mix Blur 22 / Blur 100 using Noise 4, then Less Than
       // against spherical rings. The ring/noise field stays fixed during drag.
-      vec2 uv=(p-offset)/resolution;
+      vec2 uv=(fromCenter-offset)/artworkScale/maskSize+.5;
       float valid=step(0.,uv.x)*step(0.,uv.y)*step(uv.x,1.)*step(uv.y,1.);
       float nearText=texture2D(lettering,uv).a*valid;
       float wideText=texture2D(wideLettering,uv).a*valid;
       float sharpText=texture2D(sharpLettering,uv).a*valid;
-      float mixing=smoothstep(.24,.76,noise(p/resolution*4.+vec2(2.3,5.7)));
+      vec2 fieldUV=fromCenter/artworkScale/fieldSize+.5;
+      float mixing=smoothstep(.24,.76,noise(fieldUV*4.+vec2(2.3,5.7)));
       mixing=clamp(mixing*amplitude/18.85*(effectStrength/.7),0.,.98);
       float threshold=2.*mix(nearText,wideText,mixing);
       // A low threshold produces narrow ring fragments rather than solid type.
@@ -157,7 +162,8 @@ export function createRenderer(canvas, initialSettings = {}, callbacks = {}) {
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]), gl.STATIC_DRAW);
   const position = gl.getAttribLocation(program, 'position');
   gl.enableVertexAttribArray(position); gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
-  const uniforms = Object.fromEntries(['lettering','wideLettering','sharpLettering','resolution','offset','pixelRatio','amplitude','wavelength','phase','glowPass','effectStrength','backgroundColor','textColor','flatInkColor','thinColor'].map(key => [key, gl.getUniformLocation(program,key)]));
+  const uniforms = Object.fromEntries(['lettering','wideLettering','sharpLettering','resolution','offset','pixelRatio','targetSize','fieldSize','maskSize','artworkScale','amplitude','wavelength','phase','glowPass','effectStrength','backgroundColor','textColor','flatInkColor','thinColor'].map(key => [key, gl.getUniformLocation(program,key)]));
+  gl.uniform2f(uniforms.fieldSize,REFERENCE_SIZE.width,REFERENCE_SIZE.height);
   function textTexture(){
     const result=gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D,result);
     gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
@@ -197,61 +203,69 @@ export function createRenderer(canvas, initialSettings = {}, callbacks = {}) {
   }
   const source = document.createElement('canvas');
   const ctx = source.getContext('2d');
-  let width=0, height=0, dpr=1, offset={x:0,y:0}, dragging=null, phase=0, animated=false, lastTime=0, frame=0;
+  const maxTextureSize=gl.getParameter(gl.MAX_TEXTURE_SIZE);
+  let maskWidth=0, maskHeight=0, referenceInkWidth=0;
+  let width=0, height=0, dpr=1, artworkScale=1, offset={x:0,y:0}, dragging=null, phase=0, animated=false, lastTime=0, frame=0;
+  function layoutArtwork() {
+    const image=settings.mode==='image' && settings.image?.canvas;
+    artworkScale=(image ? getImageLayout(width,height,image.width,image.height) : getTextLayout(width,height,referenceInkWidth)).effectScale;
+  }
   function lettering() {
-    source.width=canvas.width; source.height=canvas.height;
-    ctx.setTransform(dpr,0,0,dpr,0,0);
-    if (settings.mode === 'image' && settings.image) {
-      const image = settings.image.canvas;
-      const fit = Math.min(width * .84 / image.width, height * .72 / image.height);
-      const w = image.width * fit, h = image.height * fit;
-      ctx.drawImage(image, (width - w) / 2, (height - h) / 2, w, h);
-    } else {
+    const image=settings.mode==='image' && settings.image?.canvas;
     const value=settings.text || ' ';
-    let fontSize=Math.min(height*.72,width*.47);
-    ctx.font=`${fontSize}px "${settings.fontFamily}"`;
+    ctx.font=`${REFERENCE_FONT_SIZE}px "${settings.fontFamily}"`;
     const bounds=ctx.measureText(value);
-    const inkWidth=bounds.actualBoundingBoxLeft+bounds.actualBoundingBoxRight;
-    fontSize*=Math.min(1,width*.86/Math.max(inkWidth,1));
-    ctx.font=`${fontSize}px "${settings.fontFamily}"`;
-    const measured=ctx.measureText(value);
-    const left=measured.actualBoundingBoxLeft, right=measured.actualBoundingBoxRight;
-    const ascent=measured.actualBoundingBoxAscent, descent=measured.actualBoundingBoxDescent;
-    ctx.fillStyle='#fff'; ctx.strokeStyle='#fff'; ctx.lineWidth=fontSize*.035; ctx.lineJoin='round';
-    const x=width/2-(right-left)/2, y=height/2+(ascent-descent)/2;
+    referenceInkWidth=bounds.actualBoundingBoxLeft+bounds.actualBoundingBoxRight;
+    const inkWidth=image ? REFERENCE_FONT_SIZE*image.width/image.height : referenceInkWidth;
+    const inkHeight=image ? REFERENCE_FONT_SIZE : bounds.actualBoundingBoxAscent+bounds.actualBoundingBoxDescent;
+    const blurPower=postEffectScale(settings.effect);
+    // Fixed logical masks keep Gaussian kernels and glyph metrics identical
+    // at every viewport size. Padding contains the widest blur's tail.
+    const padding=Math.ceil(Math.max(120,100*blurPower**2)+REFERENCE_FONT_SIZE*.035);
+    maskWidth=Math.max(1,Math.ceil(inkWidth+padding*2));
+    maskHeight=Math.max(1,Math.ceil(inkHeight+padding*2));
+    const rasterScale=Math.min(1,maxTextureSize/maskWidth,maxTextureSize/maskHeight);
+    source.width=Math.min(maxTextureSize,Math.max(1,Math.ceil(maskWidth*rasterScale)));
+    source.height=Math.min(maxTextureSize,Math.max(1,Math.ceil(maskHeight*rasterScale)));
+    ctx.setTransform(source.width/maskWidth,0,0,source.height/maskHeight,source.width/2,source.height/2);
+    if (image) {
+      ctx.drawImage(image,-inkWidth/2,-inkHeight/2,inkWidth,inkHeight);
+    } else {
+    ctx.font=`${REFERENCE_FONT_SIZE}px "${settings.fontFamily}"`;
+    const left=bounds.actualBoundingBoxLeft, right=bounds.actualBoundingBoxRight;
+    const ascent=bounds.actualBoundingBoxAscent, descent=bounds.actualBoundingBoxDescent;
+    ctx.fillStyle='#fff'; ctx.strokeStyle='#fff'; ctx.lineWidth=REFERENCE_FONT_SIZE*.035; ctx.lineJoin='round';
+    const x=-(right-left)/2, y=(ascent-descent)/2;
     ctx.strokeText(value,x,y); ctx.fillText(value,x,y);
     }
-    // Cache the two Gaussian text masks; dragging only changes shader UVs.
     // Approximate the finite Blender Gaussian kernel with sigma=width/6.
-    const scale=Math.min(width/990,height/550);
-    const blurPower=postEffectScale(settings.effect);
     for(const [targetTexture,blurSize] of [[sharpTexture,0],[texture,22],[wideTexture,100]]){
       let pixels=source;
       if(blurSize && blurPower > 0){
         pixels=document.createElement('canvas'); pixels.width=source.width; pixels.height=source.height;
         const blurred=pixels.getContext('2d');
-        blurred.filter=`blur(${blurSize*scale*dpr/6*blurPower**2}px)`;
+        blurred.filter=`blur(${blurSize*rasterScale/6*blurPower**2}px)`;
         blurred.drawImage(source,0,0);
       }
       gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D,targetTexture);
       gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,pixels);
     }
+    layoutArtwork();
     requestDraw();
   }
   function resize() {
     const rect=canvas.getBoundingClientRect();
-    const oldWidth=width, oldHeight=height;
     width=Math.max(1,rect.width); height=Math.max(1,rect.height);
     dpr=Math.min(window.devicePixelRatio || 1,2);
     canvas.width=Math.round(width*dpr); canvas.height=Math.round(height*dpr);
-    if(oldWidth) { offset.x*=width/oldWidth; offset.y*=height/oldHeight; }
     allocate(sceneTarget,canvas.width,canvas.height);
     allocate(glowA,Math.max(1,Math.round(width/4)),Math.max(1,Math.round(height/4)));
     allocate(glowB,glowA.width,glowA.height);
     allocate(nearGlowTarget,glowA.width,glowA.height);
     bindTarget(null); gl.useProgram(program);
     gl.uniform2f(uniforms.resolution,width,height); gl.uniform1f(uniforms.pixelRatio,dpr);
-    lettering();
+    if(maskWidth) { layoutArtwork(); requestDraw(); }
+    else lettering();
   }
   function draw(time=0) {
     frame=0;
@@ -265,8 +279,11 @@ export function createRenderer(canvas, initialSettings = {}, callbacks = {}) {
     gl.activeTexture(gl.TEXTURE0);
     bindTarget(bloomIntensity>0?sceneTarget:null);
     gl.uniform1f(uniforms.pixelRatio,dpr);
+    gl.uniform2f(uniforms.targetSize,canvas.width,canvas.height);
+    gl.uniform1f(uniforms.artworkScale,artworkScale);
+    gl.uniform2f(uniforms.maskSize,maskWidth,maskHeight);
     gl.uniform1f(uniforms.glowPass,0);
-    gl.uniform2f(uniforms.offset,offset.x,-offset.y);
+    gl.uniform2f(uniforms.offset,offset.x*artworkScale,-offset.y*artworkScale);
     gl.uniform1f(uniforms.amplitude,settings.strength*.29);
     gl.uniform1f(uniforms.wavelength,33-settings.spacing*.28);
     gl.uniform1f(uniforms.phase,phase);
@@ -279,13 +296,13 @@ export function createRenderer(canvas, initialSettings = {}, callbacks = {}) {
     gl.drawArrays(gl.TRIANGLES,0,6);
     if(bloomIntensity>0){
       bindTarget(glowA);
-      gl.uniform1f(uniforms.pixelRatio,glowA.width/width);
+      gl.uniform2f(uniforms.targetSize,glowA.width,glowA.height);
       gl.uniform1f(uniforms.glowPass,1);
       gl.drawArrays(gl.TRIANGLES,0,6);
       gl.useProgram(blurProgram);
       gl.uniform1i(blurUniforms.image,0);
       gl.uniform2f(blurUniforms.size,glowA.width,glowA.height);
-      const glowScale=Math.min(1.6,Math.max(.65,Math.min(width/990,height/550)));
+      const glowScale=artworkScale;
       for(let pass=0;pass<8;pass++){
         const radius=glowScale*(pass<4?.32:.85);
         const horizontal=pass%2===0;
@@ -322,8 +339,8 @@ export function createRenderer(canvas, initialSettings = {}, callbacks = {}) {
   });
   listen(canvas, 'pointermove',event=>{
     if(!dragging || event.pointerId!==dragging.id) return;
-    offset.x=Math.max(-width*.8,Math.min(width*.8,dragging.startX+event.clientX-dragging.x));
-    offset.y=Math.max(-height*.8,Math.min(height*.8,dragging.startY+event.clientY-dragging.y));
+    offset.x=Math.max(-width*.8/artworkScale,Math.min(width*.8/artworkScale,dragging.startX+(event.clientX-dragging.x)/artworkScale));
+    offset.y=Math.max(-height*.8/artworkScale,Math.min(height*.8/artworkScale,dragging.startY+(event.clientY-dragging.y)/artworkScale));
     callbacks.onDrag?.(); requestDraw();
   });
   function release() { dragging=null; canvas.classList.remove('dragging'); }
@@ -333,7 +350,7 @@ export function createRenderer(canvas, initialSettings = {}, callbacks = {}) {
     const directions={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]};
     if(!directions[event.key]) return;
     event.preventDefault(); const [x,y]=directions[event.key];
-    offset.x+=x*(event.shiftKey?25:8); offset.y+=y*(event.shiftKey?25:8); callbacks.onDrag?.(); requestDraw();
+    offset.x+=x*(event.shiftKey?25:8)/artworkScale; offset.y+=y*(event.shiftKey?25:8)/artworkScale; callbacks.onDrag?.(); requestDraw();
   });
 
   function update(next) {
