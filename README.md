@@ -185,15 +185,11 @@ Both previews show **vortexfx** in **Inter**, with animation enabled and
 
 The factory colors with **Force 81 · Distortion 67 · Waves 54 · Bloom 48**.
 
-<video src="https://github.com/LihnNH/vortexfx/raw/refs/heads/main/docs/videos/vortexfx-light.mp4" width="990" controls autoplay loop muted playsinline aria-label="VortexFX light preset with Inter and speed 93"></video>
-
-[Watch the light preview](docs/videos/vortexfx-light.mp4)
+https://github.com/user-attachments/assets/5e1dc23e-26c6-4ce8-ab41-29182b316bb4
 
 ### Dark preset
 
 The dark preset colors with **Force 81 · Distortion 67 · Waves 54 · Bloom 6**.
 Only the preset colors and bloom differ from the light preview.
 
-<video src="https://github.com/LihnNH/vortexfx/raw/refs/heads/main/docs/videos/vortexfx-dark.mp4" width="990" controls autoplay loop muted playsinline aria-label="VortexFX dark preset with Inter and speed 93"></video>
-
-[Watch the dark preview](docs/videos/vortexfx-dark.mp4)
+https://github.com/user-attachments/assets/450bd1ab-1f24-46a8-8a86-d3507d5e6fe1
