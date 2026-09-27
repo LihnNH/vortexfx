@@ -1,7 +1,7 @@
 import { readdir } from 'node:fs/promises';
 import path from 'node:path';
 
-export async function discoverFonts(directory) {
+export async function discoverFonts(directory, basePath = '/') {
   const files = [];
   async function visit(current) {
     for (const entry of await readdir(current, { withFileTypes: true })) {
@@ -19,7 +19,7 @@ export async function discoverFonts(directory) {
       id: relative,
       name: name.replace(/\b\w/g, letter => letter.toUpperCase()),
       family: 'ImportedFont_' + Buffer.from(relative).toString('hex'),
-      url: '/fonts/' + relative.split('/').map(encodeURIComponent).join('/'),
+      url: basePath.replace(/\/?$/, '/') + 'fonts/' + relative.split('/').map(encodeURIComponent).join('/'),
       ui: relative.startsWith('ui/'),
     };
   });
@@ -27,13 +27,16 @@ export async function discoverFonts(directory) {
 
 export function fontCatalogPlugin() {
   const moduleId = 'virtual:font-catalog', resolvedId = '\0' + moduleId;
-  let fontsDirectory;
+  let fontsDirectory, basePath;
   return {
     name: 'local-font-catalog',
-    configResolved(config) { fontsDirectory = path.resolve(config.publicDir, 'fonts'); },
+    configResolved(config) {
+      fontsDirectory = path.resolve(config.publicDir, 'fonts');
+      basePath = config.base;
+    },
     resolveId(id) { if (id === moduleId) return resolvedId; },
     async load(id) {
-      if (id === resolvedId) return `export default ${JSON.stringify(await discoverFonts(fontsDirectory))};`;
+      if (id === resolvedId) return `export default ${JSON.stringify(await discoverFonts(fontsDirectory, basePath))};`;
     },
     configureServer(server) {
       server.watcher.add(fontsDirectory);

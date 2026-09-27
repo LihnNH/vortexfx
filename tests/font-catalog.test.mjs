@@ -16,6 +16,8 @@ test('discovers all supported fonts recursively, including ui and encoded filena
     assert.equal(fonts.length, 4);
     assert.equal(fonts.find(font => font.id === 'ui/Example Regular.otf').ui, true);
     assert.equal(fonts.find(font => font.id === 'nested/á test.woff2').url, '/fonts/nested/%C3%A1%20test.woff2');
+    const pagesFonts = await discoverFonts(directory, '/vortexfx/');
+    assert.equal(pagesFonts.find(font => font.id === 'nested/á test.woff2').url, '/vortexfx/fonts/nested/%C3%A1%20test.woff2');
     assert.equal(new Set(fonts.map(font => font.family)).size, 4);
     await writeFile(path.join(directory, 'new.ttf'), 'fixture');
     assert.equal((await discoverFonts(directory)).length, 5);

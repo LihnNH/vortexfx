@@ -108,7 +108,7 @@ export default function App() {
 
   return <main>
     <header className="masthead">
-      <a className="wordmark" href="/" aria-label="VortexFX início">vortex<span>fx</span></a>
+      <a className="wordmark" href={import.meta.env.BASE_URL} aria-label="VortexFX início">vortex<span>fx</span></a>
       <span className="edition">ESTUDO DE DISTORÇÃO / 001</span>
       <button onClick={fullscreen} className="icon-button" aria-label="Tela cheia" title="Tela cheia">↗</button>
     </header>

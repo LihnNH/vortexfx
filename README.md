@@ -115,6 +115,29 @@ notices to `dist/licenses/dependencies.md`. Continue running the app with
 `npm run dev` for local development. Optional browser integration checks are
 available at [tests/browser.html](http://localhost:3000/tests/browser.html).
 
+## GitHub Pages deployment
+
+The custom workflow in `.github/workflows/pages.yml` runs on pushes to `main`
+and can also be started manually. It installs locked dependencies with `npm ci`,
+checks the source, runs tests, builds for `/vortexfx/`, and deploys only `dist/`
+to GitHub Pages. The project MIT license and dependency notices are included.
+Local font files are not in the checkout, so the public site uses bundled Inter.
+
+In [repository Settings → Pages](https://github.com/LihnNH/vortexfx/settings/pages),
+set **Build and deployment → Source** to **GitHub Actions**. No custom secret or
+`gh-pages` branch is needed. If a run fails before Pages is enabled, enable it
+and rerun the workflow from the
+[Actions tab](https://github.com/LihnNH/vortexfx/actions/workflows/pages.yml).
+For a manual deployment, choose **Run workflow** with branch **main**.
+
+After a successful deployment, open
+[VortexFX on GitHub Pages](https://lihnnh.github.io/vortexfx/).
+Future pushes to `main` publish updates automatically. Local development still
+uses `npm run dev` at `http://localhost:3000/`.
+
+The build path assumes a repository site. For a custom domain, change the
+workflow's `PAGES_BASE_PATH` to `/` and configure the domain in Pages settings.
+
 ## License and attribution
 
 Original project code and the generated preview are licensed under the
