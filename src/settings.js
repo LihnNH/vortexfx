@@ -9,6 +9,17 @@ export const DEFAULT_COLORS = Object.freeze({
   thin: Object.freeze([.20, .065, .028]),
 });
 
+export const DARK_PRESET = Object.freeze({
+  controls: Object.freeze({ effect: 81, strength: 67, spacing: 54, bloom: 6, speed: 100 }),
+  colors: Object.freeze({
+    background: Object.freeze([0, 0, 0]),
+    text: Object.freeze([1, 1, 1]),
+    glowInner: Object.freeze([1, 1, 1]),
+    glowOuter: Object.freeze([1, 1, 1]),
+    thin: Object.freeze([148 / 255, 148 / 255, 148 / 255]),
+  }),
+});
+
 export function colorToHex(color) {
   return '#' + color.map(channel => Math.round(channel * 255).toString(16).padStart(2, '0')).join('');
 }

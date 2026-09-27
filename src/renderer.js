@@ -141,6 +141,9 @@ export function createRenderer(canvas, initialSettings = {}, callbacks = {}) {
       // filaments, violet around the heavier silhouettes, then black ink.
       // Shift the original red midpoint with both editable halo endpoints.
       vec3 transitionColor=clamp(vec3(.66,.29,.34)+.5*(innerGlowColor-vec3(.66,.065,.78))+.5*(outerGlowColor-vec3(.94,.80,.61)),0.,1.);
+      // Equal endpoints produce a single-color halo, including the white preset.
+      float matchingGlow=1.-smoothstep(0.,.08,length(innerGlowColor-outerGlowColor));
+      transitionColor=mix(transitionColor,(innerGlowColor+outerGlowColor)*.5,matchingGlow);
       vec3 color=mix(base,outerGlowColor,smoothstep(.015,.12,wideGlow)*.32*outside);
       color=mix(color,transitionColor,smoothstep(.025,.15,nearGlow)*.48*outside);
       color=mix(color,innerGlowColor,smoothstep(.12,.44,nearGlow)*.94*outside);

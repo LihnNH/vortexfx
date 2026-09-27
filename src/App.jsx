@@ -3,7 +3,8 @@ import localFonts from 'virtual:font-catalog';
 import { loadFontWithFallback, loadInterfaceFont, fallbackFont } from './fonts.js';
 import { createRenderer } from './renderer.js';
 import { importImage } from './import-image.js';
-import { DEFAULT_CONTROLS, DEFAULT_COLORS, colorToHex, hexToColor } from './settings.js';
+import { DEFAULT_CONTROLS, DEFAULT_COLORS, DARK_PRESET, colorToHex, hexToColor } from './settings.js';
+import { PillToggle } from './PillToggle.jsx';
 
 const fonts = [fallbackFont, ...localFonts];
 const defaultFont = localFonts.find(font => !font.ui) || localFonts[0] || fallbackFont;
@@ -25,11 +26,34 @@ export default function App() {
   const [strength, setStrength] = useState(DEFAULT_CONTROLS.strength), [spacing, setSpacing] = useState(DEFAULT_CONTROLS.spacing), [bloom, setBloom] = useState(DEFAULT_CONTROLS.bloom);
   const [effect, setEffect] = useState(DEFAULT_CONTROLS.effect), [speed, setSpeed] = useState(DEFAULT_CONTROLS.speed);
   const [colors, setColors] = useState(DEFAULT_COLORS);
+  const [darkMode, setDarkMode] = useState(false), [themePrompt, setThemePrompt] = useState(false);
+  const themeDialogRef = useRef(null);
   const [animated, setAnimated] = useState(false), [dragged, setDragged] = useState(false);
   const [ready, setReady] = useState(false), [busy, setBusy] = useState(false), [fontLoading, setFontLoading] = useState(false);
   const [error, setError] = useState(''), [fatalError, setFatalError] = useState('');
   const settings = { text, fontFamily, image, mode, strength, spacing, bloom, effect, speed, animated, colors };
   const settingsRef = useRef(settings);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = darkMode ? 'dark' : 'light';
+    return () => { delete document.documentElement.dataset.theme; };
+  }, [darkMode]);
+
+  useEffect(() => {
+    const dialog = themeDialogRef.current;
+    if (themePrompt && !dialog.open) dialog.showModal();
+    else if (!themePrompt && dialog.open) dialog.close();
+  }, [themePrompt]);
+
+  function chooseDarkMode(applyPreset) {
+    if (applyPreset) {
+      const preset = DARK_PRESET;
+      setEffect(preset.controls.effect); setStrength(preset.controls.strength);
+      setSpacing(preset.controls.spacing); setBloom(preset.controls.bloom); setSpeed(preset.controls.speed);
+      setColors(preset.colors);
+    }
+    setDarkMode(true); setThemePrompt(false);
+  }
 
   useEffect(() => {
     let alive = true;
@@ -113,7 +137,12 @@ export default function App() {
     <header className="masthead">
       <a className="wordmark" href={import.meta.env.BASE_URL} aria-label="VortexFX home">vortex<span>fx</span></a>
       <span className="edition">DISTORTION STUDY / 001</span>
-      <button onClick={fullscreen} className="icon-button" aria-label="Fullscreen" title="Fullscreen">↗</button>
+      <div className="header-actions">
+        <div className="theme-toggle"><span>Dark mode</span>
+          <PillToggle checked={darkMode} onChange={() => darkMode ? setDarkMode(false) : setThemePrompt(true)} />
+        </div>
+        <button onClick={fullscreen} className="icon-button" aria-label="Fullscreen" title="Fullscreen">↗</button>
+      </div>
     </header>
     <section className="stage" aria-label="Interactive circular distortion">
       <canvas ref={canvasRef} id="art" tabIndex="0" aria-label="Drag the artwork with your mouse or use the arrow keys. The waves stay fixed." />
@@ -174,5 +203,24 @@ export default function App() {
       {error && <div className="import-error" role="alert">{error}</div>}
     </footer>
     <div className="colophon"><span>TYPOGRAPHY IN MOTION</span><span>{mode === 'image' ? 'IMPORTED SILHOUETTE' : selectedFont?.name.toUpperCase()} / WEBGL</span></div>
+    <dialog ref={themeDialogRef} className="theme-dialog" aria-labelledby="theme-dialog-title" aria-describedby="theme-dialog-description"
+      onCancel={() => setThemePrompt(false)} onClose={() => setThemePrompt(false)} onClick={event => {
+        if (event.target !== event.currentTarget) return;
+        const bounds = event.currentTarget.getBoundingClientRect();
+        if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) setThemePrompt(false);
+      }}>
+      <h2 id="theme-dialog-title">Switch to dark mode?</h2>
+      <p id="theme-dialog-description">Choose whether to keep your artwork settings or apply the dark preset.</p>
+      <div className="theme-options">
+        <button type="button" className="theme-option" autoFocus onClick={() => chooseDarkMode(false)}>
+          <strong>Theme only</strong><span>Darken the interface and keep all current colors and effect settings.</span>
+        </button>
+        <button type="button" className="theme-option" onClick={() => chooseDarkMode(true)}>
+          <strong>Apply dark preset</strong><span>Black background, white text and glows, gray fine strokes.</span>
+          <small>Force 81 · Distortion 67 · Waves 54 · Bloom 6 · Speed 100</small>
+        </button>
+      </div>
+      <button type="button" className="theme-cancel" onClick={() => setThemePrompt(false)}>Cancel</button>
+    </dialog>
   </main>;
 }

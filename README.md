@@ -42,6 +42,10 @@ WebGL must be enabled in your browser. No local fonts are required to start.
   settings, colors and position.
 - Open **Colors** to change the background, text or logo, inner glow, outer glow
   and fine strokes. The original palette is preserved as the default.
+- Use the **Dark mode** toggle in the header. Choose **Theme only** to preserve
+  all artwork settings, or **Apply dark preset** for a black background, white
+  text and glows, and `#949494` fine strokes with force 81, distortion 67,
+  waves 54, bloom 6 and speed 100. Switching back to light mode preserves the art.
 - Export the artwork as a PNG or enter fullscreen for an uncluttered preview.
 
 Images are processed locally in the browser. Large imports are rasterized to a
